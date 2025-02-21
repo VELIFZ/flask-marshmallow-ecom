@@ -14,11 +14,13 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = User
         load_instance = True
-        # exclude = ('password')
+        exclude = ('password',) # Exclude password from responses
         
+    password = fields.String(load_only=True, allow_none=True)  # Allows NULL passwords for guests - if notrhing None since "" still a securty issue   
     # Dynamically include nested fields only if requested    
     orders = fields.Nested('OrderSchema', many=True, dump_only=True) # read only - only order_date is included by default 
     addresses = fields.Nested('AddressSchema', many=True)
+    
     
     def __init__(self, *args, **kwargs):
         # Get optional 'include' parameter from context 

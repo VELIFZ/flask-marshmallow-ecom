@@ -1,9 +1,9 @@
-
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey, Table, String, Column, DateTime, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from typing import List, Optional
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Base class
 class Base(DeclarativeBase):
@@ -30,10 +30,25 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(30), nullable=False)
     phone_number: Mapped[str] = mapped_column(String(15), nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    # One-to-Many with Orders
+    password: Mapped[str] = mapped_column(String(255), nullable=True)
+    # One-to-Many with Orders - no cascade delete- orders remains in db even user is deleted.
     orders: Mapped[List["Order"]] = relationship(back_populates="customer", cascade="all, delete-orphan")
-    # One-to-Many with Addresses
-    addresses: Mapped[List["Address"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    # One-to-Many with Addresses - cascade delete 
+    addresses: Mapped[List["Address"]] = relationship(back_populates="user", cascade="save-update")
+    
+    # securely hash plaintext passwords before storing them in password fielf of User object
+    def set_password(self, password):
+        if password:
+            self.password = generate_password_hash(password)
+        else:
+            self.password = None  # set to None if no password
+        
+    # verify the password by comparing the one hashed one stored in db
+    def verify_password(self, password):
+        if password is None:
+            return False
+        return check_password_hash(self.password, password)
+    
     
 # Address Model (Many-to-One with User)
 class Address(Base):
@@ -59,7 +74,7 @@ class Order(Base):
     order_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)    
     # ForeignKey linking Order to User
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False) 
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), onupdate='SET NULL', nullable=True) 
     # Relationship with User (Many-to-One)
     customer: Mapped["User"] = relationship(back_populates="orders")
     # Relationship with Products (Many-to-Many)
