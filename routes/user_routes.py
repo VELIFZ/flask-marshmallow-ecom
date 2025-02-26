@@ -1,8 +1,9 @@
-from schemas import user_schema, users_schema
+from schemas import user_schema, users_schema, UserSchema
 from models import db, User
 from flask import request, jsonify, Blueprint, current_app
 from marshmallow import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, or_ # to query the database
+
 import jwt
 import datetime # to handle token expiration
 
@@ -46,13 +47,55 @@ def login():
         
 
 # ============ MARK: Get Methods ========
-
-@user_bp.route('/users', methods=['GET'])
+# get all users' basic info. Paginated & Searchable
+@user_bp.route('/users', methods=['GET']) # GET /users?page=1&search=john
 def get_users():
-    query = select(User)
-    users = db.session.execute(query).scalars().all()
+    try:
+        page = page = request.args.get('page', 1, type=int) 
+        limit = request.args.get('limit', 10, type=int)
+        search = request.args.get('search', type=str)
+        
+        query = select(User)
+        
+        # ilike -> case-insensitive search & or_() to properly join conditions in sqlalchemy
+        if search:
+            query = query.where(or_(User.name.ilike(f'%{search}%'), User.last_name.ilike(f'%{search}%'), User.email.ilike(f'%{search}%')))
+        
+        users = db.session.execute(query).scalars().all()
+        
+        if not users:
+            return jsonify({"message": "No users found"}), 200 
+        
+        # total_users = len(users) # for fronted 
+        # total_pages = (total_users + limit - 1) // limit # frontend
+        start = (page-1) * limit # calculate the start index
+        end = start + limit 
+        paginated_users = users[start:end]
 
-    return users_schema.dump(users), 200
+        return jsonify({"page": page, "users": users_schema.dump(paginated_users)}), 200
+    
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
+
+
+# Get a Single User (With Optional Orders or/& Addresses)
+@user_bp.route('/user/<int:id>', methods=['GET'])
+def get_user(id):
+    try:
+        user = db.session.get(User, id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        include = request.args.get('include', '', type=str)
+        # unutma cunku -> GET /user/1?include=orders,addresses	'orders,addresses' - bunu liste yapman lazim
+        include_fields = include.split(',') if include else []
+        
+        user_schema_dynamic = UserSchema(include_fields=include_fields)
+        
+        return jsonify(user_schema_dynamic.dump(user)), 200
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
+
+
 
 #?GET /users/me to return the logged-in user's info?
 
@@ -83,7 +126,10 @@ def update_user(id):
 
 @user_bp.route('/user/<int:id>', methods=['DELETE'])
 def delete_user(id):
-    delete_user = db.session.get(User, id)
+    user = db.session.get(User, id)
     
-    if delete_user == None:
-        return jsonify
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted"}), 200

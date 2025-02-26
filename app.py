@@ -2,6 +2,7 @@ from flask import Flask
 from dotenv import load_dotenv
 import os
 from models import db
+from flask_migrate import Migrate
 
 # Load environment variables (the .env file)
 load_dotenv()
@@ -16,6 +17,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIF
 
 # link the app to the db - Initialize database with Flask app
 db.init_app(app)
+
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # Run the app
 if __name__ == "__main__":
