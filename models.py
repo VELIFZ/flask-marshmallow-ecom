@@ -28,7 +28,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(30), nullable=False)
     last_name: Mapped[str] = mapped_column(String(30), nullable=False)
-    phone_number: Mapped[str] = mapped_column(String(15), nullable=False, unique=True)
+    phone_number: Mapped[str] = mapped_column(String(15), nullable=False)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String(255), nullable=True)
     # One-to-Many with Orders - no cascade delete- orders remains in db even user is deleted.
@@ -60,7 +60,6 @@ class Address(Base):
     state: Mapped[str] = mapped_column(String(100), nullable=False)
     postal_code: Mapped[str] = mapped_column(String(20), nullable=False)
     country: Mapped[str] = mapped_column(String(100), nullable=False)
-    phone_number: Mapped[str] = mapped_column(String(15), nullable=False)
     # ForeignKey linking Address to User
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     # Relationship back to User
@@ -73,6 +72,9 @@ class Order(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)    
+    
+    status = mapped_column(String(20), default="active")
+    
     # ForeignKey linking Order to User
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), onupdate='SET NULL', nullable=True) 
     # Relationship with User (Many-to-One)

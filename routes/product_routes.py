@@ -6,22 +6,41 @@ from models import db, Product
 
 product_bp = Blueprint('product', __name__)
 
-# # ✅ PAGINATED GET /products
-# @bp.route('/products', methods=['GET'])
-# def get_products():
-#     page = request.args.get('page', 1, type=int)
-#     limit = request.args.get('limit', 10, type=int)
+@product_bp.route('/products', methods=['POST'])
+def create_product():
+    product = product_schema.load(request.json)
+    db.session.add(product)
+    db.session.commit()
+    return jsonify(product_schema.dump(product)), 201
 
-#     products = Product.query.paginate(page=page, per_page=limit, error_out=False)
+@product_bp.route('/products', methods=['GET'])
+def get_products():
+    query = select(Product)
+    products = db.session.execute(query).scalars().all()
+    return jsonify(products_schema.dump(products)), 200
 
-#     return jsonify({
-#         "page": page,
-#         "total_pages": products.pages,
-#         "total_products": products.total,
-#         "products": products_schema.dump(products.items)
-#     }), 200
+@product_bp.route('/product/<int:id>', methods=['GET'])
+def get_product(id):
+    product = db.session.get(Product, id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+    return jsonify(product_schema.dump(product)), 200
 
-# 🛠 Test Pagination in Postman
+@product_bp.route('/product/<int:id>', methods=['PUT'])
+def update_product(id):
+    product = db.session.get(Product, id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+    for key, value in request.json.items():
+        setattr(product, key, value)
+    db.session.commit()
+    return jsonify(product_schema.dump(product)), 200
 
-# 1️⃣ Get First Page of Users
-# GET http://127.0.0.1:5000/users?page=1&limit=5
+@product_bp.route('/product/<int:id>', methods=['DELETE'])
+def delete_product(id):
+    product = db.session.get(Product, id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+    db.session.delete(product)
+    db.session.commit()
+    return jsonify({"message": "Product deleted"}), 200

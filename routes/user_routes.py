@@ -8,42 +8,55 @@ import jwt
 import datetime # to handle token expiration
 
 # Define the Blueprint
-user_bp = Blueprint('main', __name__)
+user_bp = Blueprint('user', __name__)
 
 # ============ MARK: Post Methods ========
 
 @user_bp.route('/users', methods=['POST']) 
 def create_user():
     try:
-        new_user = user_schema.load(request.json) # Deserialize request data and reates a valid User object
+        # without this error. I needed to manually pull out the password before calling the schema
+        data = request.json
+        existing_user = db.session.execute(select(User).where(User.email == data["email"])).scalar_one_or_none()
+        if existing_user:
+            return jsonify({"error": "Email is already registered"}), 400 
+        
+        new_user = user_schema.load(data) # Deserialize request data and reates a valid User object
+        # burasi password icin 
+        password = data.get('password')
+        if password:  
+            #! When marshmallow converst the json to a User object does ot trigger any method in the model so password will be plaintext
+            new_user.set_password(password)  
+        else:
+            new_user.password = None  # Allow guest users
+
+        db.session.add(new_user) # Add user to DB
+        db.session.commit()
+    
+        return jsonify(user_schema.dump(new_user)), 201 # ✅ Fixed: `.dump()` instead of `.dumps()`
+        
     except ValidationError as e:
         return jsonify(e.messages), 400
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
     
-    #! When marshmallow converst the json to a User object does ot trigger any method in the model so password will be plaintext
-    new_user.set_password(request.json['password'])
-
-    db.session.add(new_user) # Add user to DB
-    db.session.commit()
+# @user_bp.route('/users/login', methods=['POST'])
+# def login():
+#     data = request.json
+#     email = data.get('email')
+#     password = data.get('password')
     
-    return jsonify(user_schema.dumps(new_user)), 201 # Return JSON response
-
-@user_bp.route('/users/login', methods=['POST'])
-def login():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
+#     user = db.session.query(User).filter_by(email=email).first()
     
-    user = db.session.query(User).filter_by(email=email).first()
+#     if not email or not user.verify_password(password): # verify user exist and passwords is correct
+#         return jsonify({'error': 'Invalid credentials'}), 401 # Unauthorized
     
-    if not email or not user.verify_password(password): # verify user exist and passwords is correct
-        return jsonify({'error': 'Invalid credentials'}), 401 # Unauthorized
-    
-    token = jwt.encode(
-    {"user_id": user.id, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)},
-    current_app.config["SECRET_KEY"], 
-    algorithm="HS256"  # encryption
-    )
-    return jsonify({'token': token}), 200 # returns to jwt roken as the response
+#     token = jwt.encode(
+#     {"user_id": user.id, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)},
+#     current_app.config["SECRET_KEY"], 
+#     algorithm="HS256"  # encryption
+#     )
+#     return jsonify({'token': token}), 200 # returns to jwt roken as the response
         
 
 # ============ MARK: Get Methods ========

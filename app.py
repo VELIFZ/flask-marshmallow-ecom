@@ -39,5 +39,6 @@ if __name__ == "__main__":
     app.register_blueprint(product_bp)
     app.register_blueprint(address_bp)
     
+    
     # run the app
     app.run(debug=True)
