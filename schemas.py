@@ -61,7 +61,10 @@ class OrderSchema(ma.SQLAlchemyAutoSchema):
 class AddressSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Address
-        load_instance = True    
+        load_instance = True
+        include_fk = True  
+
+    user_id = fields.Int(required=True)
 
 class ProductSchema(ma.SQLAlchemyAutoSchema):
     class Meta:

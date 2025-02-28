@@ -8,10 +8,14 @@ address_bp = Blueprint('address', __name__)
 
 @address_bp.route('/addresses', methods=['POST'])
 def create_address():
-    address = address_schema.load(request.json)
-    db.session.add(address)
-    db.session.commit()
-    return jsonify(address_schema.dump(address)), 201
+    try:
+        data = request.json
+        new_address = address_schema.load(data)
+        db.session.add(new_address)
+        db.session.commit()
+        return jsonify(address_schema.dump(new_address)), 201
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 @address_bp.route('/addresses', methods=['GET'])
 def get_addresses():
