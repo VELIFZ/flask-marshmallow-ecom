@@ -7,14 +7,13 @@ from app import app
 # Marshmallow is initialized (with flask) for serialization, deserialization, and validation.
 ma = Marshmallow(app)
 
-## validate incoming data
+# validate incoming data
 
 # Returns basic details by default
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = User
         load_instance = True
-        # exclude = ('password',) # Exclude password from responses
         
     password = fields.String(load_only=True, allow_none=True) 
     # Allows NULL passwords for guests - if notrhing None since "" still a securty issue   

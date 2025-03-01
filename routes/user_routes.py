@@ -3,6 +3,7 @@ from models import db, User
 from flask import request, jsonify, Blueprint, current_app
 from marshmallow import ValidationError
 from sqlalchemy import select, or_ # to query the database
+from sqlalchemy.orm import selectinload
 
 import jwt
 import datetime # to handle token expiration
@@ -33,7 +34,7 @@ def create_user():
         db.session.add(new_user) # Add user to DB
         db.session.commit()
     
-        return jsonify(user_schema.dump(new_user)), 201 # ✅ Fixed: `.dump()` instead of `.dumps()`
+        return jsonify(user_schema.dump(new_user)), 201 
         
     except ValidationError as e:
         return jsonify(e.messages), 400
@@ -64,7 +65,7 @@ def create_user():
 @user_bp.route('/users', methods=['GET']) # GET /users?page=1&search=john
 def get_users():
     try:
-        page = page = request.args.get('page', 1, type=int) 
+        page = request.args.get('page', 1, type=int) 
         limit = request.args.get('limit', 10, type=int)
         search = request.args.get('search', type=str)
         
@@ -92,18 +93,33 @@ def get_users():
 
 
 # Get a Single User (With Optional Orders or/& Addresses)
+# Get a Single User (With Optional Orders or/& Addresses)
 @user_bp.route('/user/<int:id>', methods=['GET'])
 def get_user(id):
     try:
-        user = db.session.get(User, id)
+        include = request.args.get('include', '', type=str)
+        include_fields = include.split(',') if include else []
+
+        print("Include Fields:", include_fields)
+
+        query = select(User).where(User.id == id)
+        
+        #select IN loading - available via lazy='selectin' or the selectinload() option
+        if "addresses" in include_fields:
+            query = query.options(selectinload(User.addresses))  # Load addresses only if in included= addresses
+        
+        if "orders" in include_fields:
+            query = query.options(selectinload(User.orders)) 
+
+        user = db.session.execute(query).scalar_one_or_none()
+
         if not user:
             return jsonify({"error": "User not found"}), 404
-        include = request.args.get('include', '', type=str)
-        # unutma cunku -> GET /user/1?include=orders,addresses	'orders,addresses' - bunu liste yapman lazim
-        include_fields = include.split(',') if include else []
-        
+
         user_schema_dynamic = UserSchema(include_fields=include_fields)
-        
+
+        print("Schema Fields:", user_schema_dynamic.fields.keys())
+
         return jsonify(user_schema_dynamic.dump(user)), 200
     except Exception as e:
         return jsonify({"error": "Something went wrong", "details": str(e)}), 500
@@ -133,7 +149,7 @@ def update_user(id):
         setattr(update_user, field, attribute)
     db.session.commit()
     
-    return user_schema.dumps(update_user), 200
+    return jsonify(user_schema.dump(update_user)), 200
 
 # ============ MARK: Delete Methods ========
 

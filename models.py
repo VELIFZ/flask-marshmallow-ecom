@@ -32,9 +32,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(String(255), nullable=True)
     # One-to-Many with Orders - no cascade delete- orders remains in db even user is deleted.
-    orders: Mapped[List["Order"]] = relationship(back_populates="customer", cascade="all, delete-orphan")
+    #! bu layz load olmadan postman basic degil her seyi veriyordu
+    orders: Mapped[List["Order"]] = relationship(back_populates="customer", cascade="save-update", lazy="noload" )
     # One-to-Many with Addresses - cascade delete 
-    addresses: Mapped[List["Address"]] = relationship(back_populates="user", cascade="save-update")
+    addresses: Mapped[List["Address"]] = relationship(back_populates="user", cascade="all, delete-orphan",lazy="noload" )
     
     # securely hash plaintext passwords before storing them in password fielf of User object
     def set_password(self, password):
@@ -73,7 +74,7 @@ class Order(Base):
     order_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)    
     
-    status = mapped_column(String(20), default="active")
+    # status = mapped_column(String(20), default="active")
     
     # ForeignKey linking Order to User
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), onupdate='SET NULL', nullable=True) 

@@ -14,37 +14,53 @@ def create_address():
         db.session.add(new_address)
         db.session.commit()
         return jsonify(address_schema.dump(new_address)), 201
+    except ValidationError as ve:
+        return jsonify({"error": "Validation error", "details": ve.messages}), 400
     except Exception as e:
         return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 @address_bp.route('/addresses', methods=['GET'])
 def get_addresses():
-    query = select(Address)
-    addresses = db.session.execute(query).scalars().all()
-    return jsonify(addresses_schema.dump(addresses)), 200
+    try:
+        query = select(Address)
+        addresses = db.session.execute(query).scalars().all()
+        return jsonify(addresses_schema.dump(addresses)), 200
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 @address_bp.route('/address/<int:id>', methods=['GET'])
 def get_address(id):
-    address = db.session.get(Address, id)
-    if not address:
-        return jsonify({"error": "Address not found"}), 404
-    return jsonify(address_schema.dump(address)), 200
+    try:
+        address = db.session.get(Address, id)
+        if not address:
+            return jsonify({"error": "Address not found"}), 404
+        return jsonify(address_schema.dump(address)), 200
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 @address_bp.route('/address/<int:id>', methods=['PUT'])
 def update_address(id):
-    address = db.session.get(Address, id)
-    if not address:
-        return jsonify({"error": "Address not found"}), 404
-    for key, value in request.json.items():
-        setattr(address, key, value)
-    db.session.commit()
-    return jsonify(address_schema.dump(address)), 200
+    try:
+        address = db.session.get(Address, id)
+        if not address:
+            return jsonify({"error": "Address not found"}), 404
+        for key, value in request.json.items():
+            setattr(address, key, value)
+        db.session.commit()
+        return jsonify(address_schema.dump(address)), 200
+    except ValidationError as ve:
+        return jsonify({"error": "Validation error", "details": ve.messages}), 400
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 @address_bp.route('/address/<int:id>', methods=['DELETE'])
 def delete_address(id):
-    address = db.session.get(Address, id)
-    if not address:
-        return jsonify({"error": "Address not found"}), 404
-    db.session.delete(address)
-    db.session.commit()
-    return jsonify({"message": "Address deleted"}), 200
+    try:
+        address = db.session.get(Address, id)
+        if not address:
+            return jsonify({"error": "Address not found"}), 404
+        db.session.delete(address)
+        db.session.commit()
+        return jsonify({"message": "Address deleted"}), 200
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500

@@ -8,10 +8,15 @@ order_bp = Blueprint('order', __name__)
 
 @order_bp.route('/orders', methods=['POST'])
 def create_order():
-    order = order_schema.load(request.json)
-    db.session.add(order)
-    db.session.commit()
-    return jsonify(order_schema.dump(order)), 201
+    try:
+        order = order_schema.load(request.json)
+        db.session.add(order)
+        db.session.commit()
+        return jsonify(order_schema.dump(order)), 201
+    except ValidationError as ve:
+        return jsonify({"error": "Validation error", "details": ve.messages}), 400
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 #GET Methods
 @order_bp.route('/orders', methods=['GET'])
@@ -45,13 +50,17 @@ def get_order(id):
 # PUT
 @order_bp.route('/order/<int:id>', methods=['PUT'])
 def update_order(id):
-    order = db.session.get(Order, id)
-    if not order:
-        return jsonify({"error": "Order not found"}), 404
-    for key, value in request.json.items():
-        setattr(order, key, value)
-    db.session.commit()
-    return jsonify(order_schema.dump(order)), 200
+    try:
+        order = db.session.get(Order, id)
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+        for key, value in request.json.items():
+            setattr(order, key, value)
+        db.session.commit()
+        return jsonify(order_schema.dump(order)), 200
+
+    except Exception as e:
+        return jsonify({"error": "Something went wrong", "details": str(e)}), 500
 
 # Delete but cancel
 @order_bp.route('/order/<int:id>/cancel', methods=['PUT'])
