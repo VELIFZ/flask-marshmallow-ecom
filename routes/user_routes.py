@@ -1,4 +1,4 @@
-from schemas import user_schema, users_schema, UserSchema
+from schemas.user_schema import user_schema, users_schema, UserSchema
 from models import db, User
 from flask import request, jsonify, Blueprint, current_app
 from marshmallow import ValidationError

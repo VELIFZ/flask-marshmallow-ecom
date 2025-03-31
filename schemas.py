@@ -37,25 +37,30 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         if "orders" not in include_fields:
             del self.fields["orders"]
 
-# Returns only 'order_date' by default
+# MARK: Order Schema
+# Includes Books if Requested
 class OrderSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Order
         include_fk = True
         load_instance = True
         
-    # Only include 'order_date' by default
+    # Only include these by default
+    id = fields.Int(dump_only=True)
     order_date = fields.DateTime(dump_only=True)
+    total_amount = fields.Float(dump_only=True)
+    status = fields.String(dump_only=True)
+    payment_status = fields.String(dump_only=True)
         
-    # Serialize products within an order - optional inclusion of products
-    products = fields.Nested('ProductSchema', many=True, dump_only=True)
+    # Serialize books within an order (Dynamically include products only if requested)
+    books = fields.Nested('BookSchema', many=True, dump_only=True)
     
     def __init__(self, *args, **kwargs):
         include_fields = kwargs.pop('include_fields', [])
         super().__init__(*args, **kwargs)
         
-        if 'products' not in include_fields:
-            del self.fields['products']
+        if 'books' not in include_fields:
+            del self.fields['books']
     
 class AddressSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -65,7 +70,7 @@ class AddressSchema(ma.SQLAlchemyAutoSchema):
 
     user_id = fields.Int(required=True)
 
-class ProductSchema(ma.SQLAlchemyAutoSchema):
+class BookSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Product
         load_instance = True
@@ -76,8 +81,16 @@ user_schema = UserSchema()
 users_schema = UserSchema(many=True) #Can serialize many User objects (a list of user objects)
 order_schema = OrderSchema()
 orders_schema = OrderSchema(many=True) 
-product_schema = ProductSchema()
-products_schema = ProductSchema(many=True)
+product_schema = BookSchema()
+products_schema = BookSchema(many=True)
 address_schema = AddressSchema()
 addresses_schema = AddressSchema(many=True)
 
+
+# class ReviewSchema(Schema):
+#     rating = fields.Int(required=True)
+
+#     @validates("rating")
+#     def validate_rating(self, value):
+#         if value < 1 or value > 5:
+#             raise ValidationError("Rating must be between 1 and 5.")

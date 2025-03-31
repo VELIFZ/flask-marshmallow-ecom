@@ -11,6 +11,7 @@ load_dotenv()
 app = Flask(__name__) # location
 
 # Database configuration
+#! Using SQLite for development
 # app gonna serve the database connection - flask config
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URI")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS')
