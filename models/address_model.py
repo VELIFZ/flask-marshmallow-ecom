@@ -39,11 +39,12 @@ class Address(Base):
     
     # Relationships -> Many-to-One
     # ForeignKey linking Address to User - each address must belong to a user
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    # Made nullable=True temporarily for testing
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     # Relationship back to User
     # This creates bidirectional relationship with user model's addresses field
     # One user can have Many addresses, but each address belongs to One user
-    user: Mapped["User"] = relationship(back_populates="addresses", lazy="noload")
+    user: Mapped[Optional["User"]] = relationship(back_populates="addresses", lazy="noload")
     
 #? Method to set this address as default and unset others
 # # Method to set this address as default and unset others

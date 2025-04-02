@@ -5,7 +5,6 @@ from datetime import datetime
 from sqlalchemy.sql import func
 from .base import Base
 from .user_model import User
-from .book_model import Book
 from .address_model import Address
 from decimal import Decimal
 
@@ -73,6 +72,7 @@ class Order(Base):
     # Relationships -> Many-to-Many with Books
     # One order can have many books, and one book can be in many orders
     # Uses order_book as junction table defined elsewhere
+    # Use string reference to avoid circular import
     books: Mapped[List["Book"]] = relationship(secondary="order_book", back_populates="orders", lazy="noload")
 
     __table_args__ = (

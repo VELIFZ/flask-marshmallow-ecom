@@ -11,4 +11,6 @@ __pycache__/
 
 test.py
 
-gitignore
+# Project planning files
+PLANNING.md
+TEST.md

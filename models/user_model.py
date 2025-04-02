@@ -54,7 +54,15 @@ class User(Base):
     
     # One-to-Many: One User can have Many Addresses
     # Addresses relationship: When user is deleted, all their addresses are removed
-    addresses: Mapped[List["Address"]] = relationship("Address", back_populates="user", cascade="all, delete-orphan", lazy="noload")
+    # Temporarily setting lazy="dynamic" to avoid requiring addresses at load time
+    addresses: Mapped[Optional[List["Address"]]] = relationship(
+        "Address", 
+        back_populates="user", 
+        cascade="all, delete-orphan", 
+        lazy="dynamic",  # Changed from noload to dynamic
+        uselist=True,
+        innerjoin=False  # Explicitly make it an outer join
+    )
     
     # Password management methods
     # securely hash plaintext passwords before storing them in password field of User object

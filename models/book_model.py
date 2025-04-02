@@ -3,6 +3,10 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List, Optional
 from datetime import datetime
 from .base import Base 
+from .user_model import User
+# Remove circular imports
+# from .order_model import Order
+# from .review_model import Review
 
 # (Many-to-Many with Orders, One-to-Many with User)
 class Book(Base):
@@ -47,11 +51,13 @@ class Book(Base):
     # Relationships -> Many-to-Many with Orders
     # One book can be in many orders (if seller has multiple copies)
     # Uses order_book as junction table
+    # Use string reference to avoid circular import
     orders: Mapped[List["Order"]] = relationship("Order", secondary="order_book", back_populates="books", lazy="noload")
     
     # Relationships -> One-to-Many with Reviews
     # One book can have many reviews
     # When book is deleted, all its reviews are removed
+    # Use string reference to avoid circular import
     reviews: Mapped[List["Review"]] = relationship(back_populates="book", cascade="all, delete-orphan", lazy="noload")
 
     __table_args__ = (

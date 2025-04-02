@@ -1,7 +1,9 @@
 from flask_marshmallow import Marshmallow
-from app import app
 
-ma = Marshmallow(app)
+# Initialize without app
+ma = Marshmallow()
+
+# Import schemas after ma initialization (when needed)
 
 from .user_schema import user_schema, users_schema
 from .order_schema import order_schema, orders_schema

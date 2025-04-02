@@ -1,10 +1,13 @@
 from sqlalchemy import Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from werkzeug.security import generate_password_hash, check_password_hash
 from typing import Optional
 from datetime import datetime
 from sqlalchemy.sql import func
 from .base import Base
+from .user_model import User
+# Remove circular imports
+# from .book_model import Book
+# from .order_model import Order  
 
 
 class Review(Base):
@@ -65,7 +68,6 @@ class Review(Base):
     seller: Mapped["User"] = relationship(
         back_populates="reviews",
         foreign_keys=[seller_id],
-        cascade="all, delete-orphan"
     )
     # Many-to-One: Reviews to Buyer
     # Unidirectional relationship - No back_populates because buyers don't need stored reviews
@@ -75,12 +77,14 @@ class Review(Base):
     ) 
     # Many-to-One: Reviews to Book
     # Unidirectional relationship - optional connection to specific book
+    # Use string reference to avoid circular import
     book: Mapped["Book"] = relationship(
         foreign_keys=[book_id],
         lazy="noload"
     )
     # Many-to-One: Reviews to Order
     # Unidirectional relationship - optional connection to specific order
+    # Use string reference to avoid circular import
     order: Mapped["Order"] = relationship(
         foreign_keys=[order_id],
         lazy="noload"
